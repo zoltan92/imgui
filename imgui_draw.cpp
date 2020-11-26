@@ -670,9 +670,7 @@ void ImDrawList::AddPolyline(const ImVec2* points, const int points_count, ImU32
 
         const float half_thickness = (antialias ? thickness - AA_SIZE : thickness) * 0.5f;
         const float half_thickness_aa = half_thickness + AA_SIZE;
-        unsigned int first_vtx_ptr = _VtxCurrentIdx;
-        unsigned int unused_vertices = 0;
-        unsigned int unused_indices = 0;
+        const unsigned int first_vtx_idx = _VtxCurrentIdx;
 
         float sqlen1 = 0.0f;
         float dx1, dy1;
@@ -790,8 +788,8 @@ void ImDrawList::AddPolyline(const ImVec2* points, const int points_count, ImU32
             // Having all the vertices of the incoming edge in predictable positions is important - we reference them
             // even if we don't know relevant line properties yet
 
-            int vertex_count = antialias ? (bevel ? 6 : 4) : (bevel ? 3 : 2); // FIXME: shorten the expression
-            unsigned int bi = antialias ? 4 : 2; // Outgoing edge bevel vertex index
+            const int vertex_count = antialias ? (bevel ? 6 : 4) : (bevel ? 3 : 2); // FIXME: shorten the expression
+            const unsigned int bi = antialias ? 4 : 2; // Outgoing edge bevel vertex index
             const bool bevel_l = bevel && miter_sign < 0;
             const bool bevel_r = bevel && miter_sign > 0;
 
@@ -811,12 +809,11 @@ void ImDrawList::AddPolyline(const ImVec2* points, const int points_count, ImU32
                     _VtxWritePtr[5].pos.x = b2ax; _VtxWritePtr[5].pos.y = b2ay; _VtxWritePtr[5].uv = uv; _VtxWritePtr[5].col = col_trans;
                 }
             }
-            unused_vertices += max_n_vtx - vertex_count;
             _VtxWritePtr += vertex_count;
 
             if (i1 < count)
             {
-                const int vtx_next_id = i1 < points_count-1 ? _VtxCurrentIdx+vertex_count : first_vtx_ptr;
+                const int vtx_next_id = i1 < points_count-1 ? _VtxCurrentIdx+vertex_count : first_vtx_idx;
                 unsigned int l1i = _VtxCurrentIdx + (bevel_l ? bi : 0);
                 unsigned int r1i = _VtxCurrentIdx + (bevel_r ? bi : 1);
                 unsigned int l2i = vtx_next_id;
@@ -832,8 +829,6 @@ void ImDrawList::AddPolyline(const ImVec2* points, const int points_count, ImU32
                     _IdxWritePtr[0] = (ImDrawIdx)l1i; _IdxWritePtr[1] = (ImDrawIdx)r1i; _IdxWritePtr[2] = (ImDrawIdx)ebi;
                     _IdxWritePtr += 3;
                 }
-                else
-                    unused_indices += 3;
 
                 if (antialias)
                 {
@@ -859,15 +854,15 @@ void ImDrawList::AddPolyline(const ImVec2* points, const int points_count, ImU32
                         _IdxWritePtr[5] = (ImDrawIdx)(_VtxCurrentIdx + (bevel_r ? 4 : 5));
                         _IdxWritePtr += 6;
                     }
-                    else
-                    {
-                        unused_indices += 6;
-                    }
                 }
             }
             _VtxCurrentIdx += vertex_count;
         }
-        PrimUnreserve((int)unused_indices, (int)unused_vertices);
+
+        const int unused_indices = (int)(IdxBuffer.Data + IdxBuffer.Size - _IdxWritePtr);
+        const int unused_vertices = (int)(VtxBuffer.Size - _VtxCurrentIdx - _VtxCurrentOffset);
+        if (unused_indices > 0 || unused_vertices > 0)
+            PrimUnreserve(unused_indices, unused_vertices);
     }
 }
 
