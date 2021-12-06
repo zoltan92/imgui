@@ -13,6 +13,7 @@ target_sources( imgui
 
                 PRIVATE
                     ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
+                    ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
                 )
 
 target_include_directories( imgui
@@ -20,3 +21,5 @@ target_include_directories( imgui
                             PUBLIC ${IMGUI_DIR}/backends
                             PUBLIC ${SDL2_DIR}/include
                             )
+
+target_link_libraries(imgui glfw)
